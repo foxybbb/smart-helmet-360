@@ -1,0 +1,29 @@
+{
+ "frames_total": 161,
+ "frames_exported": 73,
+ "rejected_by_reason": {
+  "missing_camera": 25,
+  "corrupt": 37,
+  "over": 10,
+  "blur": 82,
+  "cast": 27,
+  "noise": 9,
+  "noise+cast": 18,
+  "cast+blur": 13,
+  "over+blur": 22,
+  "over+cast+blur": 1,
+  "dark+cast+blur": 2,
+  "dark+cast": 1,
+  "dark+blur": 1
+ },
+ "clock_offsets_s": {
+  "cam5": 0.0,
+  "cam1": 1.0,
+  "cam2": 0.0,
+  "cam3": 0.0,
+  "cam4": 0.0,
+  "cam6": 0.0,
+  "cam7": 0.0,
+  "cam8": null
+ }
+}

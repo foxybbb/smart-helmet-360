@@ -1,0 +1,9 @@
+numpy>=2.3
+opencv-contrib-python>=5.0
+scipy>=1.18
+mcp[cli]>=2.0
+# depth mode (GPU): install torch/torchvision from https://download.pytorch.org/whl/cu128
+torch>=2.11
+torchvision>=0.26
+transformers>=4.50
+pillow

@@ -1,0 +1,117 @@
+{
+ "calibration": {
+  "cam0": {
+   "nominal_err_deg": 8.32,
+   "selfcal_err_deg": 0.28,
+   "true_k1": -0.085141,
+   "selfcal_k1": -0.051
+  },
+  "cam1": {
+   "nominal_err_deg": 3.22,
+   "selfcal_err_deg": 0.92,
+   "true_k1": -0.005989,
+   "selfcal_k1": -0.051
+  },
+  "cam2": {
+   "nominal_err_deg": 4.93,
+   "selfcal_err_deg": 0.5,
+   "true_k1": 0.055713,
+   "selfcal_k1": -0.051
+  },
+  "cam3": {
+   "nominal_err_deg": 6.19,
+   "selfcal_err_deg": 0.29,
+   "true_k1": -0.080034,
+   "selfcal_k1": -0.051
+  },
+  "cam4": {
+   "nominal_err_deg": 8.12,
+   "selfcal_err_deg": 0.44,
+   "true_k1": -0.026048,
+   "selfcal_k1": -0.051
+  },
+  "cam5": {
+   "nominal_err_deg": 4.84,
+   "selfcal_err_deg": 1.05,
+   "true_k1": -0.016682,
+   "selfcal_k1": -0.051
+  },
+  "cam6": {
+   "nominal_err_deg": 10.21,
+   "selfcal_err_deg": 1.11,
+   "true_k1": -0.01427,
+   "selfcal_k1": -0.051
+  },
+  "top7": {
+   "nominal_err_deg": 4.91,
+   "selfcal_err_deg": 0.61,
+   "true_k1": 0.003275,
+   "selfcal_k1": -0.051
+  }
+ },
+ "variants": {
+  "base_nominal": {
+   "PSNR_vs_GT": 14.88,
+   "SSIM_vs_GT": 0.623,
+   "seam_artifacts_%": 2.041,
+   "seam_MAD": 22.4,
+   "seconds": 5.612
+  },
+  "base_oracle": {
+   "PSNR_vs_GT": 20.24,
+   "SSIM_vs_GT": 0.763,
+   "seam_artifacts_%": 0.411,
+   "seam_MAD": 10.861,
+   "seconds": 5.95
+  },
+  "base_selfcal": {
+   "PSNR_vs_GT": 17.013,
+   "SSIM_vs_GT": 0.664,
+   "seam_artifacts_%": 1.374,
+   "seam_MAD": 19.07,
+   "seconds": 5.763
+  },
+  "N5_rot": {
+   "PSNR_vs_GT": 16.506,
+   "SSIM_vs_GT": 0.656,
+   "seam_artifacts_%": 1.275,
+   "seam_MAD": 18.589,
+   "seconds": 18.85
+  },
+  "N1_spline": {
+   "PSNR_vs_GT": 16.803,
+   "SSIM_vs_GT": 0.676,
+   "seam_artifacts_%": 0.534,
+   "seam_MAD": 13.716,
+   "seconds": 10.562
+  },
+  "N3_tangent": {
+   "PSNR_vs_GT": 16.578,
+   "SSIM_vs_GT": 0.667,
+   "seam_artifacts_%": 0.762,
+   "seam_MAD": 14.726,
+   "seconds": 11.613
+  },
+  "N2_raft": {
+   "PSNR_vs_GT": 16.927,
+   "SSIM_vs_GT": 0.676,
+   "seam_artifacts_%": 0.434,
+   "seam_MAD": 13.162,
+   "seconds": 16.638
+  },
+  "N4_depth": {
+   "PSNR_vs_GT": 16.681,
+   "SSIM_vs_GT": 0.656,
+   "seam_artifacts_%": 1.701,
+   "seam_MAD": 20.828,
+   "seconds": 13.438
+  },
+  "N4_depth_mono": {
+   "PSNR_vs_GT": 18.532,
+   "SSIM_vs_GT": 0.7,
+   "seam_artifacts_%": 0.896,
+   "seam_MAD": 14.947,
+   "seconds": 14.762
+  }
+ }
+}

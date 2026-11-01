@@ -1,0 +1,18 @@
+# whitelist: only the important parts of the project are versioned
+/*
+!/.gitignore
+!/README.md
+!/requirements.txt
+!/Docs/
+!/Tools/
+!/Data/
+/Data/*
+!/Data/imx219_160d.json
+!/MyProject/
+/MyProject/*
+!/MyProject/MyProject.uproject
+!/MyProject/Source/
+!/MyProject/Config/
+
+__pycache__/
+*.pyc

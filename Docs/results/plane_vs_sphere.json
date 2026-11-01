@@ -1,0 +1,103 @@
+{
+ "plane_geometry_for_110x130deg_crop": {
+  "fisheye_fov": [
+   93.2,
+   165.7
+  ],
+  "plane_fov": [
+   110,
+   130
+  ],
+  "fov_kept_%": 78.5,
+  "edge_stretch_x": 4.47
+ },
+ "plane_success": "5/6",
+ "sphere_success": "6/6",
+ "sphere_mean_seam_artifacts_%": 1.65,
+ "frames": [
+  {
+   "frame": "000001",
+   "plane": {
+    "status": "NEED_MORE_IMGS",
+    "cameras_used": "0/8",
+    "seconds": 0.8
+   },
+   "sphere": {
+    "status": "OK",
+    "cameras_used": "8/8",
+    "seconds": 5.3,
+    "seam_artifacts_%": 2.92
+   }
+  },
+  {
+   "frame": "000015",
+   "plane": {
+    "status": "OK",
+    "cameras_used": "2/8",
+    "seconds": 1.2
+   },
+   "sphere": {
+    "status": "OK",
+    "cameras_used": "8/8",
+    "seconds": 6.3,
+    "seam_artifacts_%": 1.91
+   }
+  },
+  {
+   "frame": "000029",
+   "plane": {
+    "status": "OK",
+    "cameras_used": "2/8",
+    "seconds": 0.4
+   },
+   "sphere": {
+    "status": "OK",
+    "cameras_used": "8/8",
+    "seconds": 5.7,
+    "seam_artifacts_%": 1.16
+   }
+  },
+  {
+   "frame": "000044",
+   "plane": {
+    "status": "OK",
+    "cameras_used": "4/8",
+    "seconds": 0.4
+   },
+   "sphere": {
+    "status": "OK",
+    "cameras_used": "8/8",
+    "seconds": 5.7,
+    "seam_artifacts_%": 1.18
+   }
+  },
+  {
+   "frame": "000058",
+   "plane": {
+    "status": "OK",
+    "cameras_used": "2/8",
+    "seconds": 0.2
+   },
+   "sphere": {
+    "status": "OK",
+    "cameras_used": "8/8",
+    "seconds": 5.5,
+    "seam_artifacts_%": 1.83
+   }
+  },
+  {
+   "frame": "000073",
+   "plane": {
+    "status": "OK",
+    "cameras_used": "2/8",
+    "seconds": 0.2
+   },
+   "sphere": {
+    "status": "OK",
+    "cameras_used": "8/8",
+    "seconds": 5.5,
+    "seam_artifacts_%": 0.91
+   }
+  }
+ ]
+}

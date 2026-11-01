@@ -1,0 +1,42 @@
+{
+ "base": {
+  "seam_artifacts_%": 1.652,
+  "seam_MAD": 25.992,
+  "seconds": 5.983
+ },
+ "base_pc": {
+  "seam_artifacts_%": 1.788,
+  "seam_MAD": 26.77,
+  "seconds": 5.8
+ },
+ "N5_rot_pc": {
+  "seam_artifacts_%": 2.123,
+  "seam_MAD": 31.953,
+  "seconds": 52.783
+ },
+ "N1_spline_pc": {
+  "seam_artifacts_%": 1.43,
+  "seam_MAD": 24.118,
+  "seconds": 8.9
+ },
+ "N3_tangent_pc": {
+  "seam_artifacts_%": 1.448,
+  "seam_MAD": 23.917,
+  "seconds": 10.383
+ },
+ "N2_raft_pc": {
+  "seam_artifacts_%": 1.297,
+  "seam_MAD": 23.8,
+  "seconds": 17.067
+ },
+ "N4_depth_mono_pc": {
+  "seam_artifacts_%": 1.553,
+  "seam_MAD": 25.053,
+  "seconds": 14.967
+ },
+ "N4_depth_mono_flow_pc": {
+  "seam_artifacts_%": 0.798,
+  "seam_MAD": 18.17,
+  "seconds": 21.7
+ }
+}
