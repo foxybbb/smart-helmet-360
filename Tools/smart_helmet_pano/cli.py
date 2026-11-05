@@ -4,6 +4,9 @@
   python -m smart_helmet_pano synth   <out_session_dir> [--frames 3]
   python -m smart_helmet_pano undistort <image> --cam cam0 [--rig rig.json]
   python -m smart_helmet_pano rig     [--out rig.json]       # default rig + coverage
+  python -m smart_helmet_pano board   --out board.png        # printable ChArUco board
+  python -m smart_helmet_pano calibrate-board <session>      # lab calibration with the handheld board
+  python -m smart_helmet_pano refine-mounts <session> --lens lab_rig.json   # field re-calibration of the mounts
 """
 import argparse
 import json
@@ -108,6 +111,31 @@ def cmd_calibrate(a):
     return rep
 
 
+def cmd_board(a):
+    from .target_calib import make_board, save_board_image
+    b = make_board((a.squares_x, a.squares_y), a.square_mm / 1000)
+    w, h = save_board_image(a.out, b, dpi=a.dpi)
+    print(f"saved {a.out}: {w}x{h} px at {a.dpi} dpi = {w / a.dpi * 25.4:.0f} x {h / a.dpi * 25.4:.0f} mm "
+          f"(print at 100 %, check one square = {a.square_mm} mm with a ruler)")
+
+
+def cmd_calibrate_board(a):
+    from .rig import Rig
+    from .target_calib import make_board, calibrate_board_session
+    b = make_board((a.squares_x, a.squares_y), a.square_mm / 1000)
+    rig0 = Rig.load(a.rig) if a.rig else None
+    rig, rep = calibrate_board_session(a.session, rig0, b, f_init=a.f_init)
+    print(json.dumps(rep, indent=1, ensure_ascii=False))
+    return rep
+
+
+def cmd_refine_mounts(a):
+    from .target_calib import refine_mounts_session
+    rig, rep = refine_mounts_session(a.session, a.lens, n_frames=a.frames)
+    print(json.dumps(rep, indent=1, ensure_ascii=False))
+    return rep
+
+
 def cmd_health(a):
     import collections
     import glob
@@ -168,6 +196,26 @@ def main(argv=None):
     s.add_argument("--frames", type=int, default=16)
     s.add_argument("--f-init", type=float, default=680.0)
     s.set_defaults(fn=cmd_calibrate)
+    for name, fn, hlp in (("board", cmd_board, "printable ChArUco board for the lab calibration"),
+                          ("calibrate-board", cmd_calibrate_board,
+                           "lab calibration with a handheld ChArUco board: per-camera lens + mounting")):
+        s = sp.add_parser(name, help=hlp)
+        if name == "board":
+            s.add_argument("--out", default="charuco_board.png")
+            s.add_argument("--dpi", type=int, default=300)
+        else:
+            s.add_argument("session", help="folder with frames/<id>/<cam>.jpg, one board placement per frame")
+            s.add_argument("--rig", help="nominal rig.json (default: session rig.json or the scheme)")
+            s.add_argument("--f-init", type=float, default=None)
+        s.add_argument("--squares-x", type=int, default=11)
+        s.add_argument("--squares-y", type=int, default=8)
+        s.add_argument("--square-mm", type=float, default=50.0)
+        s.set_defaults(fn=fn)
+    s = sp.add_parser("refine-mounts", help="field re-calibration: lab lens kept, mounting re-estimated from ordinary frames")
+    s.add_argument("session")
+    s.add_argument("--lens", required=True, help="rig.json from the lab calibration (calibrate-board)")
+    s.add_argument("--frames", type=int, default=8)
+    s.set_defaults(fn=cmd_refine_mounts)
     s = sp.add_parser("health", help="per-camera photo quality report for raw Pi folders")
     s.add_argument("raw_root")
     s.set_defaults(fn=cmd_health)

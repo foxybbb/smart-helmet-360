@@ -17,6 +17,7 @@ Default rig = "Scheme_Helmet_8_Cameras":
 Lens model: OpenCV fisheye / Kannala-Brandt
   r = f * theta_d, theta_d = theta (1 + k1 theta^2 + k2 theta^4 + k3 theta^6 + k4 theta^8)
 With k = 0 this is the ideal equidistant fisheye used by the UE simulation.
+Optional decentering terms p1, p2 act on the distorted normalised coordinates (cheap M12 lenses).
 """
 from __future__ import annotations
 
@@ -82,6 +83,8 @@ class Camera:
     max_theta_deg: float = 89.0
     # optional calibrated rotation (rig <- camera, UE axes); overrides rotation_pyr_deg when set
     rotation_matrix: list | None = None
+    # decentering (tangential) distortion p1, p2 on the distorted normalised coordinates (0 = pure KB)
+    p: list = field(default_factory=lambda: [0.0, 0.0])
 
     # --- derived -------------------------------------------------------
     @property
@@ -113,8 +116,14 @@ class Camera:
         k1, k2, k3, k4 = self.k
         theta_d = theta * (1 + t2 * (k1 + t2 * (k2 + t2 * (k3 + t2 * k4))))
         scale = np.where(rxy > 1e-12, theta_d / np.maximum(rxy, 1e-12), 0.0)
-        u = self.fx * x * scale + self.cx
-        v = self.fy * y * scale + self.cy
+        xd, yd = x * scale, y * scale
+        p1, p2 = self.p if self.p else (0.0, 0.0)
+        if p1 or p2:
+            r2 = xd * xd + yd * yd
+            xd, yd = (xd + 2 * p1 * xd * yd + p2 * (r2 + 2 * xd * xd),
+                      yd + p1 * (r2 + 2 * yd * yd) + 2 * p2 * xd * yd)
+        u = self.fx * xd + self.cx
+        v = self.fy * yd + self.cy
         valid = (theta < math.radians(self.max_theta_deg)) & (u >= 0) & (u <= self.width - 1) \
             & (v >= 0) & (v <= self.height - 1)
         return u, v, valid
@@ -123,6 +132,13 @@ class Camera:
         """Pixel -> unit ray in rig frame (equidistant inverse with Newton for k != 0)."""
         mx = (u - self.cx) / self.fx
         my = (v - self.cy) / self.fy
+        p1, p2 = self.p if self.p else (0.0, 0.0)
+        if p1 or p2:                       # undo the decentering term (fixed point, converges in a few steps)
+            x0, y0 = mx, my
+            for _ in range(6):
+                r2 = mx * mx + my * my
+                mx, my = (x0 - (2 * p1 * mx * my + p2 * (r2 + 2 * mx * mx)),
+                          y0 - (p1 * (r2 + 2 * my * my) + 2 * p2 * mx * my))
         theta_d = np.sqrt(mx * mx + my * my)
         theta = theta_d.copy()
         k1, k2, k3, k4 = self.k

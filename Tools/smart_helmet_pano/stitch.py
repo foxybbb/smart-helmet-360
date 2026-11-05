@@ -28,7 +28,7 @@ from .rig import Rig, quat_to_matrix, rot_ue
 @dataclass
 class StitchOptions:
     width: int = 4096
-    proxy_depth_m: float = 4.0          # zero-parallax distance; float('inf') = pure rotation model
+    proxy_depth_m: float = 4.0          # zero-parallax distance; float('inf') = pure rotation; or an (H, W) depth map
     level: str = "tilt"                  # none | tilt (pitch+roll only) | full (yaw too, north-up)
     exposure: bool = True
     flow: bool = True
@@ -93,7 +93,10 @@ class PanoStitcher:
     def build_maps(self, M: np.ndarray):
         d = self._dirs @ M.T  # rig-frame rays
         depth = self.o.proxy_depth_m
-        P = d * (1e6 if not np.isfinite(depth) else depth)
+        if np.ndim(depth):        # per-pixel depth map (H, W) along each panorama direction, metres
+            P = d * np.asarray(depth, np.float32)[..., None]
+        else:
+            P = d * (1e6 if not np.isfinite(depth) else depth)
         maps = []
         self.thetas = []
         for cam in self.rig.cameras:

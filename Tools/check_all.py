@@ -163,6 +163,38 @@ def c_calib():
                                         "median_px": rep["median_px_calibrated"], "mounting_errors": cams}
 
 
+@check("Board calibration recovers a simulated helmet (bundle adjustment)", "2 Calibration")
+def c_board():
+    """Faulty rig (mount 3 deg, principal point 15 px, own lens curves) + handheld board plan; corners projected
+    by the true cameras with 0.15 px noise -> solve_board (Kannala-Brandt + decentering p1 p2) must recover the
+    mounting to < 0.2 deg and every viewing ray to < 3 arcmin (Docs/CALIBRATION.md)."""
+    from calib_lab import methods as M, evaluate as E, scenes as S
+    from smart_helmet_pano.target_calib import solve_board
+    ctx = M.make_ctx("7x141", 1, OUT / "check" / "board", workers=1)
+    board = S.charuco_board(*M.BOARD_ARGS)
+    loc = board.getChessboardCorners().astype(np.float64)
+    rng = np.random.default_rng(0)
+    dets = []
+    for k, p in enumerate(M.plan_board(ctx, singles=10, pairs=4, seed=14)):
+        X = loc @ p["R"].T + p["t"]
+        for ci in p["vis"]:
+            c = ctx.true.cameras[ci]
+            u, v, ok = c.project(X)
+            pc = (X - np.asarray(c.position_m)) @ c.R_cv_from_rig.T
+            ok &= np.degrees(np.arctan2(np.hypot(pc[:, 0], pc[:, 1]), pc[:, 2])) < 88   # like the detector
+            ok &= (u > 12) & (u < c.width - 13) & (v > 12) & (v < c.height - 13)
+            ids = np.flatnonzero(ok)
+            if len(ids) >= 6:
+                dets.append((k, ci, ids, np.stack([u[ids], v[ids]], 1) + rng.normal(0, 0.15, (len(ids), 2))))
+    rig, rep = solve_board(ctx.nominal, dets, board, verbose=False)
+    agg, _ = E.camera_errors(E.align(rig, ctx.true), ctx.true)
+    nom, _ = E.camera_errors(E.align(ctx.nominal, ctx.true), ctx.true)
+    ok = agg["rot_err_max_deg"] < 0.2 and agg["ray_rms_arcmin"] < 3
+    return ("PASS" if ok else "FAIL"), {"nominal_rot_err_deg": nom["rot_err_deg"], "rot_err_deg": agg["rot_err_deg"],
+                                        "rot_err_max_deg": agg["rot_err_max_deg"], "ray_rms_arcmin": agg["ray_rms_arcmin"],
+                                        "rms_px": rep["rms_px"], "placements": rep["placements"]}
+
+
 @check("Real panoramas: criterion < 10 % (sphere projection)", "3 Real helmet")
 def c_real():
     from smart_helmet_pano.cli import frame_dirs
@@ -290,7 +322,7 @@ def c_build():
 
 
 def main():
-    for fn in [c_rig, c_synth, c_level, c_rot, c_undist, c_health, c_sync, c_calib, c_real, c_plane, c_imu,
+    for fn in [c_rig, c_synth, c_level, c_rot, c_undist, c_health, c_sync, c_calib, c_board, c_real, c_plane, c_imu,
                c_mcp, c_ue, c_ue_cap, c_build]:
         fn()
     (OUT / "check_report.json").write_text(json.dumps(results, indent=1, ensure_ascii=False, default=str), encoding="utf-8")

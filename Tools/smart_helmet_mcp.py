@@ -190,6 +190,32 @@ def calibrate_rig(session: str, frames: int = 16, f_init: float = 680.0) -> str:
 
 
 @mcp.tool()
+def calibrate_board(session: str, nominal_rig: str = "", squares_x: int = 11, squares_y: int = 8,
+                    square_mm: float = 50.0) -> str:
+    """Lab calibration with a handheld ChArUco board (best seams in the simulation study, 2 arcmin):
+    session/frames/<id>/<cam>.jpg, one board placement per frame, helmet static. Estimates every camera's
+    lens (fx, fy, cx, cy, k1..k4), mounting rotation and lens centre; writes <session>/rig.json and
+    board_calibration_report.json (incl. per-camera image coverage - aim for > 90 %)."""
+    from smart_helmet_pano.rig import Rig
+    from smart_helmet_pano.target_calib import calibrate_board_session, make_board
+    with _quiet():
+        _, rep = calibrate_board_session(session, Rig.load(nominal_rig) if nominal_rig else None,
+                                         make_board((squares_x, squares_y), square_mm / 1000), verbose=False)
+    return json.dumps(rep, ensure_ascii=False, indent=1)
+
+
+@mcp.tool()
+def refine_mounts(session: str, lab_rig: str, frames: int = 8) -> str:
+    """Field re-calibration after knocks / transport: the lens from the lab rig.json is kept, mounting rotations
+    and lens centres are re-estimated from ordinary frames (simulation: 1 deg drift, seams 77 -> 2.8 arcmin).
+    Writes <session>/rig.json + mount_refinement_report.json (rotation change of every camera)."""
+    from smart_helmet_pano.target_calib import refine_mounts_session
+    with _quiet():
+        _, rep = refine_mounts_session(session, lab_rig, n_frames=frames, verbose=False)
+    return json.dumps(rep, ensure_ascii=False, indent=1)
+
+
+@mcp.tool()
 def stitch_real(frame_or_session: str, width: int = 4096, limit: int = 0, mode: str = "depth") -> str:
     """Stitch real helmet photos with the self-calibrated rig: ISP-gamma linearisation + ALSC devignetting
     (imx219_160d.json), per-camera exposure/WB gains, nearest-axis seams.
