@@ -1,0 +1,50 @@
+{
+ "nominal": {
+  "mode": "depth",
+  "seconds": 63.0,
+  "PSNR": 9.72,
+  "SSIM": 0.389,
+  "seam_artifacts_%": 1.02,
+  "ideal_depth": {
+   "PSNR": 10.21,
+   "SSIM": 0.4024,
+   "seam_artifacts_%": 1.75
+  }
+ },
+ "selfcal": {
+  "mode": "depth",
+  "seconds": 58.2,
+  "PSNR": 12.99,
+  "SSIM": 0.5059,
+  "seam_artifacts_%": 0.31,
+  "ideal_depth": {
+   "PSNR": 12.54,
+   "SSIM": 0.4872,
+   "seam_artifacts_%": 0.73
+  }
+ },
+ "charuco_tangential": {
+  "mode": "depth",
+  "seconds": 62.4,
+  "PSNR": 17.1,
+  "SSIM": 0.8123,
+  "seam_artifacts_%": 0.2,
+  "ideal_depth": {
+   "PSNR": 18.68,
+   "SSIM": 0.9083,
+   "seam_artifacts_%": 0.1
+  }
+ },
+ "oracle": {
+  "mode": "depth",
+  "seconds": 66.1,
+  "PSNR": 17.23,
+  "SSIM": 0.8212,
+  "seam_artifacts_%": 0.17,
+  "ideal_depth": {
+   "PSNR": 18.89,
+   "SSIM": 0.9211,
+   "seam_artifacts_%": 0.1
+  }
+ }
+}
