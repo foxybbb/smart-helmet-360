@@ -1,4 +1,4 @@
-"""Tables (markdown, Russian) + compact JSON of the calibration study.
+"""Tables (markdown) + compact JSON of the calibration study.
 
   python -m calib_lab.summarize      -> Output/calib_study/tables.md, Docs/results/calibration_study.json
 """
@@ -14,17 +14,17 @@ from .truth import VARIANTS
 ROOT = Path(__file__).resolve().parents[2]
 
 NAMES = {
-    "nominal": "Без калибровки (чертёж + паспорт объектива)",
-    "selfcal": "Самокалибровка по сцене (текущий конвейер)",
-    "charuco": "Ручная ChArUco-доска",
-    "markers": "Маркерные точки ArUco, координаты неизвестны",
-    "markers_surveyed": "Маркерные точки, координаты измерены",
-    "projector": "Шахматки, спроецированные на стены",
-    "projector_scaled": "Шахматки на стенах + рулетка (ширина каждой доски)",
-    "cube_design": "Квадратная комната-куб, геометрия по чертежу",
-    "cube_panels": "Квадратная комната-куб, положение панелей оценивается",
-    "hybrid": "ChArUco-объектив + повороты по сцене",
-    "oracle": "Истинные параметры (предел)",
+    "nominal": "No calibration (drawing + lens datasheet)",
+    "selfcal": "Self-calibration on the scene (current pipeline)",
+    "charuco": "Handheld ChArUco board",
+    "markers": "ArUco marker points, positions unknown",
+    "markers_surveyed": "Marker points, positions surveyed",
+    "projector": "Chessboards projected onto the walls",
+    "projector_scaled": "Projected chessboards + tape (width of every board)",
+    "cube_design": "Square room (cube), geometry from the drawing",
+    "cube_panels": "Square room (cube), panel poses estimated",
+    "hybrid": "ChArUco lens + rotations from the scene",
+    "oracle": "True parameters (limit)",
 }
 
 
@@ -49,17 +49,17 @@ def f(x, n=1):
     return "—" if x is None else f"{x:.{n}f}"
 
 
-SHOTS = {"markers": "{captures} поз штатива", "markers_surveyed": "{captures} поз штатива + съёмка тахеометром",
-         "projector": "{captures} поз штатива × 14 направлений проектора",
-         "projector_scaled": "то же + 28 замеров рулеткой", "cube_design": "{captures} позы в кубе",
-         "cube_panels": "{captures} позы в кубе", "charuco": "{placements} положений доски ({images} кадров)",
-         "selfcal": "{frames} обычных кадров", "hybrid": "{frames} обычных кадров + объектив из ChArUco"}
+SHOTS = {"markers": "{captures} tripod poses", "markers_surveyed": "{captures} tripod poses + total-station survey",
+         "projector": "{captures} tripod poses × 14 projector aims",
+         "projector_scaled": "same + 28 tape measurements", "cube_design": "{captures} poses in the cube",
+         "cube_panels": "{captures} poses in the cube", "charuco": "{placements} board placements ({images} images)",
+         "selfcal": "{frames} ordinary frames", "hybrid": "{frames} ordinary frames + lens from ChArUco"}
 
 
 def main_table(r):
-    rows = ["| Метод | Поворот камер, ° (ср. / макс.) | Центр линзы, мм | Ошибка луча, ′ | "
-            "Искажение панорамы ∞, ′ (ср. / p95) | Разрыв на швах ∞, ′ (ср. / p95) | "
-            "Швы при точной глубине, ′ | PSNR при точной глубине, дБ | Съёмка |",
+    rows = ["| Method | Camera rotation, ° (mean / max) | Lens centre, mm | Ray error, ′ | "
+            "Panorama distortion ∞, ′ (mean / p95) | Seam break ∞, ′ (mean / p95) | "
+            "Seams at true depth, ′ | PSNR at true depth, dB | Capture |",
             "|---|---|---|---|---|---|---|---|---|"]
     for m in METHODS:
         x = r["methods"].get(m)
@@ -80,7 +80,7 @@ def main_table(r):
 
 
 def proxy_table(r):
-    rows = ["| Метод | Разрыв на швах, ′ | PSNR, дБ | SSIM | Артефакты без потока, % | Артефакты с потоком, % |",
+    rows = ["| Method | Seam break, ′ | PSNR, dB | SSIM | Artifacts without flow, % | Artifacts with flow, % |",
             "|---|---|---|---|---|---|"]
     for m in METHODS:
         x = r["methods"].get(m)
@@ -93,8 +93,8 @@ def proxy_table(r):
 
 
 def overlap_table(res):
-    rows = ["| Вариант | Камер | Поле кадра, ° (Г × В) | px/° | Перекрытие соседей на горизонте, ° | "
-            "Перекрытие кольца и верхней, ° | Покрытие сферы, % | Двойное покрытие, % |",
+    rows = ["| Variant | Cameras | Image FOV, ° (H × V) | px/° | Neighbour overlap at the horizon, ° | "
+            "Ring–top overlap, ° | Sphere covered, % | Double coverage, % |",
             "|---|---|---|---|---|---|---|---|"]
     for k, r in res.items():
         o = r["overlap"]
@@ -120,7 +120,7 @@ def matrix(res, path, title, n=1, higher_better=False):
 
 def theta_table(r):
     bins = list(g(r, "methods", "charuco", "calib", "ray_rms_by_theta_arcmin", default={}).keys())
-    rows = ["| Метод | " + " | ".join(f"{b}°" for b in bins) + " |", "|---|" + "---|" * len(bins)]
+    rows = ["| Method | " + " | ".join(f"{b}°" for b in bins) + " |", "|---|" + "---|" * len(bins)]
     for m in METHODS:
         bt = g(r, "methods", m, "calib", "ray_rms_by_theta_arcmin")
         if not bt or m == "oracle":
@@ -134,12 +134,12 @@ def drift_table(seed=1, variant="7x141", drift=1.0):
     if not p.exists():
         return ""
     r = json.loads(p.read_text(encoding="utf-8"))
-    names = {"nominal": "Без калибровки", "lab_charuco_stale": "Заводская ChArUco, не обновлена",
-             "lab_cube_stale": "Заводской куб, не обновлён", "field_selfcal": "Самокалибровка в поле",
-             "hybrid_charuco_lens": "Гибрид: объектив из ChArUco + повороты по сцене",
-             "hybrid_cube_lens": "Гибрид: объектив из куба + повороты по сцене", "oracle": "Истинные параметры"}
-    rows = ["| Вариант | Поворот камер, ° (ср. / макс.) | Ошибка луча, ′ | Искажение ∞, ′ | Разрыв на швах ∞, ′ | "
-            "Швы при точной глубине, ′ | PSNR при точной глубине, дБ |",
+    names = {"nominal": "No calibration", "lab_charuco_stale": "Lab ChArUco, not updated",
+             "lab_cube_stale": "Lab cube, not updated", "field_selfcal": "Self-calibration in the field",
+             "hybrid_charuco_lens": "Hybrid: lens from ChArUco + rotations from the scene",
+             "hybrid_cube_lens": "Hybrid: lens from the cube + rotations from the scene", "oracle": "True parameters"}
+    rows = ["| Variant | Camera rotation, ° (mean / max) | Ray error, ′ | Distortion ∞, ′ | Seam break ∞, ′ | "
+            "Seams at true depth, ′ | PSNR at true depth, dB |",
             "|---|---|---|---|---|---|---|"]
     for m, x in r["methods"].items():
         rows.append(f"| {names.get(m, m)} | {f(x['calib']['rot_err_deg'], 2)} / {f(x['calib']['rot_err_max_deg'], 2)} | "
@@ -155,7 +155,7 @@ def tangential_table():
     if not p.exists():
         return ""
     t = json.loads(p.read_text(encoding="utf-8"))
-    rows = ["| Метод | Экземпляр | Ошибка луча, ′ | Искажение ∞, ′ | Разрыв на швах ∞, ′ | Швы при точной глубине, ′ |",
+    rows = ["| Method | Sample | Ray error, ′ | Distortion ∞, ′ | Seam break ∞, ′ | Seams at true depth, ′ |",
             "|---|---|---|---|---|---|"]
     for key, methods in t.items():
         variant, seed = key.rsplit("_s", 1)
@@ -189,29 +189,29 @@ def compact(res):
 
 def main():
     res = load(1)
-    parts = ["## Варианты перекрытия\n", overlap_table(res)]
+    parts = ["## Overlap variants\n", overlap_table(res)]
     if "7x141" in res:
-        parts += ["\n## Схема 7 × 141°: все методы\n", main_table(res["7x141"]),
-                  "\n## Ошибка луча по углу от оси, ′ (7 × 141°)\n", theta_table(res["7x141"])]
-    mx = lambda path, n=1, hb=False: matrix(res, path, "Метод \\ вариант", n, hb)
-    parts += ["\n## Разрыв на швах на бесконечности, ′ (средн.)\n", mx(("pano_infinity", "seam_break_arcmin", "mean")),
-              "\n## Искажение панорамы на бесконечности, ′ (средн.)\n", mx(("pano_infinity", "geom_err_arcmin", "mean")),
-              "\n## Разрыв на швах в комнате при точной глубине, ′ (средн.)\n",
+        parts += ["\n## Scheme 7 × 141°: all methods\n", main_table(res["7x141"]),
+                  "\n## Ray error by angle from the axis, ′ (7 × 141°)\n", theta_table(res["7x141"])]
+    mx = lambda path, n=1, hb=False: matrix(res, path, "Method \\ variant", n, hb)
+    parts += ["\n## Seam break at infinity, ′ (mean)\n", mx(("pano_infinity", "seam_break_arcmin", "mean")),
+              "\n## Panorama distortion at infinity, ′ (mean)\n", mx(("pano_infinity", "geom_err_arcmin", "mean")),
+              "\n## Seam break in the room at true depth, ′ (mean)\n",
               mx(("pano_room_truedepth", "seam_break_arcmin", "mean")),
-              "\n## PSNR комнаты при точной глубине, дБ\n", mx(("image_truedepth", "PSNR"), 2, True),
-              "\n## Разрыв на швах в комнате, прокси-сфера 3 м, ′ (средн.)\n", mx(("pano_room", "seam_break_arcmin", "mean")),
-              "\n## Ошибка поворота камер, ° (средн.)\n", mx(("calib", "rot_err_deg"), 3)]
+              "\n## PSNR of the room at true depth, dB\n", mx(("image_truedepth", "PSNR"), 2, True),
+              "\n## Seam break in the room, 3 m proxy sphere, ′ (mean)\n", mx(("pano_room", "seam_break_arcmin", "mean")),
+              "\n## Camera rotation error, ° (mean)\n", mx(("calib", "rot_err_deg"), 3)]
     if "7x141" in res:
-        parts += ["\n## Тестовая комната, прокси-сфера 3 м (базовый режим), 7 × 141°\n", proxy_table(res["7x141"])]
+        parts += ["\n## Test room, 3 m proxy sphere (base mode), 7 × 141°\n", proxy_table(res["7x141"])]
     s2 = load(2)
     if "7x141" in s2:
-        parts += ["\n## Повтор на другом экземпляре каски (seed 2), 7 × 141°\n", main_table(s2["7x141"])]
+        parts += ["\n## Repeat on another helmet sample (seed 2), 7 × 141°\n", main_table(s2["7x141"])]
     tt = tangential_table()
     if tt:
-        parts += ["\n## Модель объектива: Kannala-Brandt против + децентровка p1, p2, 7 × 141°\n", tt]
+        parts += ["\n## Lens model: Kannala-Brandt vs + decentering p1, p2, 7 × 141°\n", tt]
     d = drift_table()
     if d:
-        parts += ["\n## Дрейф креплений в поле (σ 1°), 7 × 141°\n", d]
+        parts += ["\n## Mount drift in the field (σ 1°), 7 × 141°\n", d]
     (OUT / "tables.md").write_text("\n".join(parts) + "\n", encoding="utf-8")
     out = {"seed1": compact(res)}
     if s2:

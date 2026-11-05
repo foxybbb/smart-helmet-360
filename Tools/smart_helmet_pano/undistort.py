@@ -1,4 +1,4 @@
-"""Fisheye ("рыбий глаз") undistortion – test programme sec. 3.2, steps 1-2.
+"""Fisheye undistortion – test programme sec. 3.2, steps 1-2.
 
 Converts one camera image to a rectilinear (pinhole) view with cv2.fisheye.
 A 141 deg lens cannot be fully rectified, so `fov_h_deg`/`fov_v_deg` choose the

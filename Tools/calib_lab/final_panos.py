@@ -24,8 +24,8 @@ from . import evaluate as E
 from . import methods as M
 from .run_study import OUT, test_frames, test_room
 
-RIGS = [("nominal", "Без калибровки"), ("selfcal", "Самокалибровка по сцене"),
-        ("charuco_tangential", "ChArUco + p1, p2 (лучшая)"), ("oracle", "Истинные параметры")]
+RIGS = [("nominal", "No calibration"), ("selfcal", "Self-calibration on the scene"),
+        ("charuco_tangential", "ChArUco + p1, p2 (best)"), ("oracle", "True parameters")]
 LABEL_EN = {"nominal": "no calibration", "selfcal": "self-calibration (natural features)",
             "charuco_tangential": "handheld ChArUco + lens decentering (best)", "oracle": "true parameters",
             "gt": "ground truth (ideal camera in the helmet centre)"}

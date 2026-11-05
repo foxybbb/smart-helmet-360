@@ -153,7 +153,7 @@ def calibrate_board_session(session, rig0: Rig | None = None, board=None, f_init
 def refine_mounts(frames, lens_rig: Rig, max_per_pair=40, verbose=True):
     """Lens (fx, fy, cx, cy, k) fixed from the lab calibration; mounting rotations and lens centres
     re-estimated from SIFT matches of ordinary frames (after knocks / transport).  Simulation: the lab
-    accuracy is restored (seams 2.8 arcmin vs 77 for the stale lab rig, Docs/CALIBRATION.md "Дрейф").
+    accuracy is restored (seams 2.8 arcmin vs 77 for the stale lab rig, Docs/CALIBRATION.md "Field drift").
     frames: list of [image per camera, same order as lens_rig.cameras]."""
     from .bundle import FREE, init_free_points
     from .calibrate import _features, _match, _ransac_rotation

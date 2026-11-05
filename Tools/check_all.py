@@ -326,13 +326,13 @@ def main():
                c_mcp, c_ue, c_ue_cap, c_build]:
         fn()
     (OUT / "check_report.json").write_text(json.dumps(results, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-    lines = ["# Smart Helmet: проверка системы", "", f"Дата: {time.strftime('%Y-%m-%d %H:%M')}", "",
-             "| Группа | Проверка | Итог | Детали |", "|---|---|---|---|"]
+    lines = ["# Smart Helmet: system check", "", f"Date: {time.strftime('%Y-%m-%d %H:%M')}", "",
+             "| Group | Check | Result | Details |", "|---|---|---|---|"]
     for r in results:
         d = r["detail"] if isinstance(r["detail"], str) else json.dumps(r["detail"], ensure_ascii=False)
         lines.append(f"| {r['group']} | {r['check']} | **{r['status']}** | {d[:400].replace('|', '/')} |")
     cnt = {s: sum(r["status"] == s for r in results) for s in ("PASS", "FAIL", "SKIP")}
-    lines += ["", f"Итого: {cnt}"]
+    lines += ["", f"Total: {cnt}"]
     (OUT / "check_report.md").write_text("\n".join(lines), encoding="utf-8")
     print(cnt)
 

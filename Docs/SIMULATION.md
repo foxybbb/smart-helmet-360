@@ -1,56 +1,58 @@
-# Как проходила симуляция: Unreal Engine 5.8 + MCP
+# How the simulation was done: Unreal Engine 5.8 + MCP
 
-## Инструменты
-| Что | Чем |
+## Tools
+| What | With |
 |---|---|
-| Движок | Unreal Engine 5.8, C++ модули `MyProject` (runtime) и `MyProjectEditor` (editor) |
-| Управление редактором из Claude | Встроенный в UE 5.8 MCP-сервер Epic: плагины `ModelContextProtocol`, `ToolsetRegistry`, `EditorToolset`. Адрес `http://localhost:8000/mcp`, транспорт streamable HTTP |
-| Свои MCP-инструменты каски | `USmartHelmetToolset` (`Source/MyProjectEditor`) регистрируется в ToolsetRegistry и виден как `MyProjectEditor.SmartHelmetToolset` |
-| Мост и автоматизация | `Tools/ue_mcp.py` (мини-клиент MCP), `Tools/ue_build_scene.py` (сборка уровня), `Tools/experiments/ue_dataset.py` (генерация датасетов) |
-| Сшивка и оценка | Python 3.14, OpenCV 5, NumPy/SciPy, PyTorch 2.11 + CUDA (RAFT, Depth Anything V2), MCP SDK 2.x (`Tools/smart_helmet_mcp.py`) |
-| Ассеты | Шаблоны UE 5.8: манекен Manny/Quinn и анимации, Enhanced Input, LevelPrototyping. Небо и солнце с уровня SimBlank. Каска собрана из BasicShapes |
+| Engine | Unreal Engine 5.8, C++ modules `MyProject` (runtime) and `MyProjectEditor` (editor) |
+| Driving the editor from Claude | The MCP server built into UE 5.8 by Epic: plugins `ModelContextProtocol`, `ToolsetRegistry`, `EditorToolset`. Address `http://localhost:8000/mcp`, streamable HTTP transport |
+| Our own helmet MCP tools | `USmartHelmetToolset` (`Source/MyProjectEditor`) registers in ToolsetRegistry and shows up as `MyProjectEditor.SmartHelmetToolset` |
+| Bridge and automation | `Tools/ue_mcp.py` (mini MCP client), `Tools/ue_build_scene.py` (level build), `Tools/experiments/ue_dataset.py` (dataset generation) |
+| Stitching and evaluation | Python 3.14, OpenCV 5, NumPy / SciPy, PyTorch 2.11 + CUDA (RAFT, Depth Anything V2), MCP SDK 2.x (`Tools/smart_helmet_mcp.py`) |
+| Assets | UE 5.8 templates: Manny / Quinn mannequin and animations, Enhanced Input, LevelPrototyping. Sky and sun from the SimBlank level. The helmet is built from BasicShapes |
 
-## Модель каски в UE (`SmartHelmetComponent`)
-- 7 камер по кругу с шагом 51.43°, наклон +9.3°, радиус 10.5 см; 1 камера в зенит. Всё по `Scheme_Helmet_8_Cameras`.
-- Каждая камера рендерит куб-карту (5 граней), затем по таблице (LUT) получается fisheye 1080×1920 по модели Kannala-Brandt. Это та же модель, что использует OpenCV-сшивка.
-- Каска крепится к кости `head` манекена, поэтому в момент снимка IMU (запись в формате BNO055) видит реальное покачивание головы.
-- Захват: клавиша `C`, автосъёмка `T` каждые 5 с (по программе испытаний), MCP-команда `CaptureFrame`.
-- Запись: `rig.json` (номинальная калибровка), `frames/NNNNNN/cam*.png`, `meta.json` (поза каски в момент триггера и IMU), `imu.jsonl`.
+## Helmet model in UE (`SmartHelmetComponent`)
+- 7 ring cameras with a 51.43° step, pitched up by 9.3°, radius 10.5 cm; 1 camera pointing at the zenith. All as in `Scheme_Helmet_8_Cameras`.
+- Every camera renders a cube map (5 faces), then a lookup table (LUT) turns it into a 1080×1920 fisheye with the Kannala-Brandt model. This is the same model the OpenCV stitcher uses.
+- The helmet is attached to the mannequin's `head` bone, so at the moment of a shot the IMU (logged in BNO055 format) sees the real head sway.
+- Capture: key `C`, auto-capture `T` every 5 s (as in the test programme), MCP command `CaptureFrame`.
+- Output: `rig.json` (nominal calibration), `frames/NNNNNN/cam*.png`, `meta.json` (helmet pose at the trigger and IMU), `imu.jsonl`.
 
-## Неточности реального железа (`ConfigureImperfections`)
-Разброс по каждой камере, воспроизводимый по seed:
+## Faults of real hardware (`ConfigureImperfections`)
+Per-camera spread, reproducible from a seed:
 
-| Параметр | Что моделирует | В тестах |
+| Parameter | What it models | In the tests |
 |---|---|---|
-| `MountErrorStdDeg` | погрешность установки камеры | σ 3° (выпало до 10°) |
-| `LensKStd` | разные коэффициенты дисторсии k1..k4 | σ k1 = 0.03 |
-| `TriggerJitterMaxS` | несинхронные Raspberry Pi | до 0.5 с; оператор идёт и поворачивает со скоростью 25°/с |
-| `ExposureStdStops`, `WhiteBalanceStd` | независимые AE и AWB | 0.8 ступени, 0.08 |
-| `VignetteStrength`, `NoiseStd` | спад яркости объектива и шум сенсора | 0.5, σ 2 |
-| `bCaptureReference` | эталон: идеальный куб 360° из центра каски в момент триггера | вкл. |
+| `MountErrorStdDeg` | camera mounting error | σ 3° (up to 10° drawn) |
+| `LensKStd` | different distortion coefficients k1..k4 | σ k1 = 0.03 |
+| `TriggerJitterMaxS` | unsynchronised Raspberry Pis | up to 0.5 s; the operator walks and turns at 25°/s |
+| `ExposureStdStops`, `WhiteBalanceStd` | independent AE and AWB | 0.8 stops, 0.08 |
+| `VignetteStrength`, `NoiseStd` | lens fall-off and sensor noise | 0.5, σ 2 |
+| `bCaptureReference` | ground truth: an ideal 360° cube from the helmet centre at the trigger | on |
 
-В `rig.json` пишутся номинальные значения, как у реальной каски, а истина — отдельными полями `true_*`, только для оценки.
+`rig.json` stores the nominal values, as on the real helmet; the truth goes into separate `true_*` fields, for evaluation only.
 
-## Ход работы (ключевые моменты)
-1. **Документы.** Из схемы взяты геометрия и FOV (−61.4°…+80°, перекрытие 30°). Из отчёта этапа 2 — формат BNO055 и формулы выравнивания горизонта по кватерниону. Из программы испытаний — интервал 5 с и критерий «артефакты < 10% центральной площади».
-2. **Анализ Street View.** Калиброванная проекция вместо поиска точек на каждом кадре, проекция на прокси-глубину, коррекция швов потоком, выравнивание экспозиции. Всё это легло в основу конвейера.
-3. **MCP в UE 5.8.** Включён встроенный сервер, написан свой набор инструментов. Уровень `HelmetTest` и оператор собраны командами MCP.
-4. **Первая сшивка.** Синтетическая комната с настоящим параллаксом дала 3.4% артефактов, кадры из UE — 1.2–2.4%. Сравнение «сфера против плоскости»: проекция на плоскость с последующим `cv2.Stitcher` связывает 2–4 камеры из 8 или разваливается, сферическая — 8 из 8.
-5. **Реальный шлем** (1257 фото). Найдены и обработаны:
-   - смещение часов Pi на 4 ч и наложение сессий из-за fake-hwclock;
-   - 44 пустых файла;
-   - экспозиция камер, различающаяся до 7 раз;
-   - 2 битых кватерниона BNO055.
-   Самокалибровка объектива дала FOV по диагонали 174.8° при паспортных 175°.
-6. **Обзор литературы по оптическому потоку**: `Docs/optical_flow_review.md`.
-7. **Стенд в UE со всеми неточностями** (датасеты A и B) и **тот же тест на реальных кадрах**: `Docs/RESULTS.md`.
-8. **В конвейер встроен победитель**: режим «глубина» (Depth Anything V2 + триангуляция по потоку между камерами + глобальная сплайновая подгонка швов). На реальных кадрах артефакты на швах снизились с 1.65% до 0.80%.
+## Course of work (key points)
+1. **Documents.** Geometry and FOV (−61.4°…+80°, 30° overlap) come from the scheme. The BNO055 format and the horizon-levelling formulas from the quaternion come from the stage-2 report. The 5 s interval and the criterion "artifacts < 10 % of the central area" come from the test programme.
+2. **Street View analysis.** Calibrated projection instead of feature search on every frame, projection onto a proxy depth, seam correction by flow, exposure equalisation. All of this became the basis of the pipeline.
+3. **MCP in UE 5.8.** The built-in server was enabled and our own toolset written. The `HelmetTest` level and the operator were built with MCP commands.
+4. **First stitch.** A synthetic room with real parallax gave 3.4 % artifacts, frames from UE 1.2–2.4 %. Sphere vs plane: projecting onto a plane followed by `cv2.Stitcher` links 2–4 cameras out of 8 or falls apart, the spherical projection links 8 out of 8.
+5. **Real helmet** (1257 photos). Found and handled:
+   - Pi clocks off by 4 h and sessions overlapping because of fake-hwclock;
+   - 44 empty files;
+   - camera exposure differing by up to 7×;
+   - 2 broken BNO055 quaternions.
+   Lens self-calibration gave a diagonal FOV of 174.8° against the specified 175°.
+6. **Literature review of optical flow**: `Docs/optical_flow_review.md`.
+7. **UE test bench with all faults** (datasets A and B) and **the same test on real frames**: `Docs/RESULTS.md`.
+8. **The winner went into the pipeline**: the depth mode (Depth Anything V2 + triangulation from inter-camera flow + global spline seam fit). On real frames seam artifacts went down from 1.65 % to 0.80 %.
+9. **Calibration study** (stands with targets, overlap variants, field drift, lens model): `Docs/CALIBRATION.md`.
 
-## Как воспроизвести
+## How to reproduce
 ```bash
-# 1. UE: открыть MyProject/MyProject.uproject (нужны ассеты шаблонов, см. README), MCP стартует сам
-python Tools/ue_build_scene.py                     # уровень HelmetTest через MCP
-python Tools/experiments/ue_dataset.py 8 1 0       # датасет A: неточности без рассинхрона
-python Tools/experiments/ue_dataset.py 8 1 0.5     # датасет B: плюс рассинхрон до 0.5 с
+# 1. UE: open MyProject/MyProject.uproject (template assets needed, see README), MCP starts by itself
+python Tools/ue_build_scene.py                     # HelmetTest level via MCP
+python Tools/experiments/ue_dataset.py 8 1 0       # dataset A: faults without desynchronisation
+python Tools/experiments/ue_dataset.py 8 1 0.5     # dataset B: plus desynchronisation up to 0.5 s
 python Tools/experiments/ue_eval.py <session_dir> 2048
+python Tools/experiments/ue_final.py --width 4096  # final 4096 panoramas of both datasets (depth mode)
 ```

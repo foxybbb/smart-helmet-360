@@ -1,87 +1,88 @@
-# Smart Helmet 360: симуляция в UE5 + MCP и сшивка панорам OpenCV
+# Smart Helmet 360: UE5 + MCP simulation and OpenCV panorama stitching
 
-Цифровой двойник каски с 8 камерами (7 по кругу + 1 в зенит, Raspberry Pi, объективы fisheye ~175°, IMU BNO055).
-В него входят:
-- **Unreal Engine 5.8.** Оператор в каске, синхронная съёмка 8 камер, модель неточностей реального железа и эталонная 360°-съёмка. Всё управляется через **MCP** (встроенный сервер UE 5.8 плюс свой набор инструментов).
-- **Конвейер «док-станции» на Python/OpenCV.** Загрузка сессий Raspberry Pi с починкой синхронизации, контроль качества снимков, самокалибровка без шахматной доски, фотометрия по tuning-файлу libcamera, сшивка в эквипрямоугольную панораму. Есть MCP-сервер `smart-helmet`.
-- **Исследование.** Как снимает и стыкует Google Street View; обзор научных работ по оптическому потоку; проверка 5 направлений на UE (с эталоном) и на реальных кадрах; сравнение 9 способов калибровки каски на 5 вариантах перекрытия камер.
+A digital twin of a helmet with 8 cameras (7 in a ring + 1 at the zenith, Raspberry Pi, ~175° fisheye lenses, BNO055 IMU).
+It consists of:
+- **Unreal Engine 5.8.** An operator wearing the helmet, synchronous capture by the 8 cameras, a model of the faults of real hardware and a 360° ground-truth capture. Everything is driven through **MCP** (the server built into UE 5.8 plus our own toolset).
+- **A "dock station" pipeline in Python / OpenCV.** Ingest of Raspberry Pi sessions with synchronisation repair, photo quality control, lab calibration with a ChArUco board and field re-calibration, self-calibration without a target, photometry from the libcamera tuning file, stitching into an equirectangular panorama. There is an MCP server `smart-helmet`.
+- **Research.** How Google Street View captures and stitches; a literature review of optical flow; 5 research directions tested on UE (with ground truth) and on real frames; 9 calibration methods compared on 5 camera-overlap variants.
 
-![Реальная панорама](Docs/media/11_real_panorama_atrium_4096_depth.jpg)
-*Реальный шлем, атриум: итоговый режим «глубина», 4096×2048.*
+![Real panorama](Docs/media/11_real_panorama_atrium_4096_depth.jpg)
+*Real helmet, atrium: final depth mode, 4096×2048.*
 
-## Главные результаты
-| Что | Результат |
+## Main results
+| What | Result |
 |---|---|
-| Геометрия по схеме | Кольцо видит от −61.4° до +80°, перекрытие соседних камер 30°, покрыто 93.7% сферы (надир не виден) |
-| Проекция | **Сфера, а не плоскость.** Fisheye-пиксель сразу превращается в луч, промежуточной плоскости нет. Плоскость + `cv2.Stitcher` связывает 2–4 камеры из 8 или разваливается ([07](Docs/media/07_plane_vs_sphere_projection.jpg)) |
-| Самокалибровка реального шлема | Диагональ FOV **174.8°** при паспортных 175° (Arducam IMX219 M12). Измерены ошибки установки: азимут −5…+11°, наклон +1…+5.6° |
-| Самокалибровка в UE (истина известна) | Ошибка поворота камер 3–10° (номинал) → **0.15–0.55°** |
-| Реальные данные, 1257 фото | Часы Pi сбиты на 4 ч, fake-hwclock наложил 5 сессий, 44 пустых файла, экспозиция камер различается до 7 раз. Всё обработано, получено 73 синхронных кадра |
-| Критерий программы испытаний (артефакты < 10% центральной площади) | UE 0.4–2.7%; реальный шлем **0.27–1.0%** в итоговом режиме |
-| Калибровка по мишеням (стенды с известной истиной, 5 вариантов перекрытия) | Без калибровки разрыв на швах 5.5°, самокалибровка 30–47′, стенды с мишенями 2–9′. **Лучшая — ручная ChArUco-доска с моделью объектива p1, p2: 0.5′ (0.1 px при 4096).** Перекрытие 19–39° на калибровку почти не влияет. Подробно: [Docs/CALIBRATION.md](Docs/CALIBRATION.md) |
-| Итоговая панорама после калибровки | Режим «глубина», 4096×2048: PSNR **17.1 дБ** против 17.2 дБ у истинных параметров каски (самокалибровка 13.0, без калибровки 9.7) — [панорама](Docs/media/21_final_panorama_charuco_4096.jpg), [крупные планы швов](Docs/media/23_final_seam_closeups.jpg) |
-| Обслуживание в поле | Крепления сдвинулись на ~1° → заводская калибровка 77′ на швах; **лабораторный объектив + повороты по обычным кадрам** возвращают 1.5–3′ |
-| Лучший метод швов | **Глубина (Depth Anything V2 + триангуляция по потоку) + глобальная сплайновая подгонка.** На реальных кадрах швы 1.65% → 0.80%. Подробно: [Docs/RESULTS.md](Docs/RESULTS.md) |
+| Geometry per the scheme | The ring sees from −61.4° to +80°, neighbouring cameras overlap by 30°, 93.7 % of the sphere is covered (the nadir is not seen) |
+| Projection | **A sphere, not a plane.** A fisheye pixel turns straight into a ray, with no intermediate plane. Plane + `cv2.Stitcher` links 2–4 cameras out of 8 or falls apart ([07](Docs/media/07_plane_vs_sphere_projection.jpg)) |
+| Self-calibration of the real helmet | Diagonal FOV **174.8°** against the specified 175° (Arducam IMX219 M12). Measured mounting errors: azimuth −5…+11°, tilt +1…+5.6° |
+| Self-calibration in UE (truth known) | Camera rotation error 3–10° (nominal) → **0.15–0.55°** |
+| Real data, 1257 photos | Pi clocks off by 4 h, fake-hwclock overlapped 5 sessions, 44 empty files, camera exposure differs by up to 7×. All handled, 73 synchronous frames obtained |
+| Test programme criterion (artifacts < 10 % of the central area) | UE 0.4–2.7 %; real helmet **0.27–1.0 %** in the final mode |
+| Target-based calibration (stands with known truth, 5 overlap variants) | Seam break 5.5° without calibration, 30–47′ with self-calibration, 2–9′ with target stands. **Best — handheld ChArUco board with the lens decentering model p1, p2: 0.5′ (0.1 px at 4096).** Overlap of 19–39° barely affects calibration. Details: [Docs/CALIBRATION.md](Docs/CALIBRATION.md) |
+| Final panorama after calibration | Depth mode, 4096×2048: PSNR **17.1 dB** against 17.2 dB for the true helmet parameters (self-calibration 13.0, no calibration 9.7) — [panorama](Docs/media/21_final_panorama_charuco_4096.jpg), [seam close-ups](Docs/media/23_final_seam_closeups.jpg) |
+| Field maintenance | Mounts moved by ~1° → stale lab calibration 77′ at the seams; **lab lens + rotations from ordinary frames** bring it back to 1.5–3′ |
+| UE captures, final panoramas | Calibrated once on the synchronous dataset: PSNR **19.9 dB** vs ground truth (true parameters 21.4 dB on frame 4); with camera desynchronisation up to 0.5 s — 12.9 dB, limited by sync, not by calibration ([RESULTS.md](Docs/RESULTS.md)) |
+| Best seam method | **Depth (Depth Anything V2 + triangulation from flow) + global spline fit.** On real frames seams 1.65 % → 0.80 %. Details: [Docs/RESULTS.md](Docs/RESULTS.md) |
 
-| UE: оператор и 8 камер | UE: эталон против методов |
+| UE: operator and 8 cameras | UE: ground truth vs methods |
 |---|---|
 | ![](Docs/media/01_ue_operator_with_helmet.jpg) ![](Docs/media/02_ue_8_fisheye_cameras.jpg) | ![](Docs/media/05_ue_eval_gt_vs_methods.jpg) |
 
-| Реальный шлем: база против итогового режима | Фотометрия: до и после |
+| Real helmet: base vs final mode | Photometry: before and after |
 |---|---|
 | ![](Docs/media/10_real_base_vs_depth.jpg) | ![](Docs/media/13_real_no_photometric_correction.jpg) ![](Docs/media/14_real_with_photometric_correction.jpg) |
 
-## Документы
-- [Docs/SIMULATION.md](Docs/SIMULATION.md) — как проходила симуляция, инструменты, модель неточностей, ход работы.
-- [Docs/RESULTS.md](Docs/RESULTS.md) — сравнение направлений 1–5 на UE (датасеты A/B с эталоном) и на реальных кадрах.
-- [Docs/CALIBRATION.md](Docs/CALIBRATION.md) — калибровка каски: модель неточностей камер, стенды (доска ChArUco, маркерные точки, проецируемые шахматки, калибровочный куб, самокалибровка), перекрытие камер.
-- [Docs/optical_flow_review.md](Docs/optical_flow_review.md) — обзор литературы по оптическому потоку для сшивки 360°.
-- [Docs/results/](Docs/results/) — сырые метрики, отчёты калибровки, проверка системы.
-- [Docs/media/](Docs/media/) — все иллюстрации.
+## Documents
+- [Docs/SIMULATION.md](Docs/SIMULATION.md) — how the simulation was done, tools, fault model, course of work.
+- [Docs/RESULTS.md](Docs/RESULTS.md) — directions 1–5 compared on UE (datasets A/B with ground truth) and on real frames; final UE panoramas.
+- [Docs/CALIBRATION.md](Docs/CALIBRATION.md) — helmet calibration: camera fault model, stands (ChArUco board, marker points, projected chessboards, calibration cube, self-calibration), camera overlap, lens model, field drift.
+- [Docs/optical_flow_review.md](Docs/optical_flow_review.md) — literature review of optical flow for 360° stitching.
+- [Docs/results/](Docs/results/) — raw metrics, calibration reports, system check.
+- [Docs/media/](Docs/media/) — all illustrations.
 
-## Структура
+## Layout
 ```
-MyProject/                 UE 5.8 (только Source, Config, .uproject; ассеты копируются из шаблонов движка)
-  Source/MyProject/SmartHelmet/   SmartHelmetComponent (8 камер, LUT fisheye, неточности, IMU), Character, GameMode, TestRange
-  Source/MyProjectEditor/         SmartHelmetToolset: MCP-инструменты каски
+MyProject/                 UE 5.8 (Source, Config, .uproject only; assets are copied from the engine templates)
+  Source/MyProject/SmartHelmet/   SmartHelmetComponent (8 cameras, fisheye LUT, faults, IMU), Character, GameMode, TestRange
+  Source/MyProjectEditor/         SmartHelmetToolset: helmet MCP tools
 Tools/
-  smart_helmet_pano/       rig, stitch, advanced (режим «глубина»), calibrate (самокалибровка), bundle (связка),
-                           targets (ArUco/ChArUco/шахматки), target_calib (доска + полевая подстройка),
+  smart_helmet_pano/       rig, stitch, advanced (depth mode), calibrate (self-calibration), bundle (bundle adjustment),
+                           targets (ArUco / ChArUco / chessboards), target_calib (board + field re-calibration),
                            photometric, ingest, health, quality, level, undistort, synth, cli
-  calib_lab/               исследование калибровки: модель неточностей, стенды, методы, оценка, отчёт
-  smart_helmet_mcp.py      MCP-сервер «док-станции» (17 инструментов)
+  calib_lab/               calibration study: fault model, stands, methods, evaluation, report, final panoramas
+  smart_helmet_mcp.py      "dock station" MCP server (17 tools)
   ue_mcp.py, ue_build_scene.py, setup_ue_assets.py, check_all.py
-  experiments/             directions.py, ue_dataset.py, ue_eval.py, real_eval.py, plane_vs_sphere.py
-Data/imx219_160d.json      tuning-файл libcamera (гамма ISP, ALSC)
+  experiments/             directions.py, ue_dataset.py, ue_eval.py, ue_final.py, real_eval.py, plane_vs_sphere.py
+Data/imx219_160d.json      libcamera tuning file (ISP gamma, ALSC)
 ```
 
-## Быстрый старт
+## Quick start
 ```bash
-python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # torch с CUDA — см. requirements.txt
+python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # torch with CUDA — see requirements.txt
 cd Tools
-python -m smart_helmet_pano synth ../Output/synth --frames 2              # синтетика с параллаксом
+python -m smart_helmet_pano synth ../Output/synth --frames 2              # synthetic frames with parallax
 python -m smart_helmet_pano stitch ../Output/synth --width 2048
-# реальный шлем: папки cam1..cam8 с Raspberry Pi
+# real helmet: folders cam1..cam8 from the Raspberry Pis
 python -m smart_helmet_pano health    <raw_root>
 python -m smart_helmet_pano ingest    <raw_root> ../Output/real_helmet
-python -m smart_helmet_pano board --out charuco_board.png                # доска A2 для лабораторной калибровки
-python -m smart_helmet_pano calibrate-board <board_session> --rig <номинальный rig.json>   # объектив + установка каждой камеры
-python -m smart_helmet_pano refine-mounts ../Output/real_helmet --lens <лабораторный rig.json>  # подстройка креплений в поле
-python -m smart_helmet_pano calibrate ../Output/real_helmet --frames 16   # самокалибровка, если лабораторной нет
-python -m smart_helmet_pano stitch    ../Output/real_helmet --real --width 4096   # режим «глубина» на GPU, без GPU — базовый
-python check_all.py                                                     # проверка всей системы
+python -m smart_helmet_pano board --out charuco_board.png                # A2 board for the lab calibration
+python -m smart_helmet_pano calibrate-board <board_session> --rig <nominal rig.json>   # lens + mounting of every camera
+python -m smart_helmet_pano refine-mounts ../Output/real_helmet --lens <lab rig.json>  # field re-calibration of the mounts
+python -m smart_helmet_pano calibrate ../Output/real_helmet --frames 16   # self-calibration if there is no lab calibration
+python -m smart_helmet_pano stitch    ../Output/real_helmet --real --width 4096   # depth mode on a GPU, base mode without one
+python check_all.py                                                     # full system check
 ```
 
-**Unreal.** Выполнить `python Tools/setup_ue_assets.py`, открыть `MyProject/MyProject.uproject`, затем `python Tools/ue_build_scene.py`. Клавиши в Play: `C` — снимок, `T` — автосъёмка каждые 5 с, `V` — вид с каски.
+**Unreal.** Run `python Tools/setup_ue_assets.py`, open `MyProject/MyProject.uproject`, then `python Tools/ue_build_scene.py`. Keys in Play: `C` — capture, `T` — auto-capture every 5 s, `V` — helmet view.
 
-**MCP в Claude Code:**
+**MCP in Claude Code:**
 ```bash
 claude mcp add --transport http unreal http://localhost:8000/mcp
 claude mcp add smart-helmet -- <venv>/python.exe Tools/smart_helmet_mcp.py
 ```
 
-## Рекомендации по железу (по результатам)
-1. Аппаратный триггер или NTP плюс RTC на всех Pi. Рассинхрон до 1 с — главный источник ошибок и портит самокалибровку.
-2. Фиксированные экспозиция и баланс белого, которые рассылает ведущая Pi (`AeEnable=False`, `AwbEnable=False`).
-3. Лабораторная калибровка каждой каски ручной ChArUco-доской (`calibrate-board`) или в калибровочном кубе: у объективов разная дисторсия и смещённая главная точка, по сцене их не разделить. В поле объектив не трогать, обновлять только крепления (`refine-mounts`). Подробно: [Docs/CALIBRATION.md](Docs/CALIBRATION.md).
-4. Проверка записи снимков (`fsync`, контроль размера файла) и валидация кватернионов BNO055.
+## Hardware recommendations (from the results)
+1. A hardware trigger, or NTP plus an RTC on every Pi. Desynchronisation of up to 1 s is the main source of errors and spoils self-calibration.
+2. Fixed exposure and white balance broadcast by the master Pi (`AeEnable=False`, `AwbEnable=False`).
+3. A lab calibration of every helmet with a handheld ChArUco board (`calibrate-board`) or in a calibration cube: the lenses have different distortion and an offset principal point, which cannot be separated from a scene. In the field, keep the lens and update only the mounts (`refine-mounts`). Details: [Docs/CALIBRATION.md](Docs/CALIBRATION.md).
+4. Verify writing of the photos (`fsync`, file-size check) and validate the BNO055 quaternions.

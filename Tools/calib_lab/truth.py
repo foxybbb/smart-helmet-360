@@ -91,11 +91,11 @@ class RigSpec:
 
 
 VARIANTS = {
-    "6x141": RigSpec("6x141", "6 камер × 141°", ring=6, vfov_deg=141.4),
-    "7x141": RigSpec("7x141", "7 камер × 141° (схема)", ring=7, vfov_deg=141.4),
-    "8x141": RigSpec("8x141", "8 камер × 141°", ring=8, vfov_deg=141.4),
-    "6x160": RigSpec("6x160", "6 камер × 160°", ring=6, vfov_deg=160.0),
-    "7x160": RigSpec("7x160", "7 камер × 160°", ring=7, vfov_deg=160.0),
+    "6x141": RigSpec("6x141", "6 cams × 141°", ring=6, vfov_deg=141.4),
+    "7x141": RigSpec("7x141", "7 cams × 141° (scheme)", ring=7, vfov_deg=141.4),
+    "8x141": RigSpec("8x141", "8 cams × 141°", ring=8, vfov_deg=141.4),
+    "6x160": RigSpec("6x160", "6 cams × 160°", ring=6, vfov_deg=160.0),
+    "7x160": RigSpec("7x160", "7 cams × 160°", ring=7, vfov_deg=160.0),
 }
 
 

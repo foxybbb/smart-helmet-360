@@ -1,8 +1,8 @@
-# Smart Helmet: проверка системы
+# Smart Helmet: system check
 
-Дата: 2026-11-01 19:54
+Date: 2026-11-01 19:54
 
-| Группа | Проверка | Итог | Детали |
+| Group | Check | Result | Details |
 |---|---|---|---|
 | 1 Geometry | Rig matches Scheme_Helmet_8_Cameras | **PASS** | {"elevation_range_deg": [-61.36, 79.96], "hfov_deg": 80.2, "ring_step_deg": 51.43, "sphere_covered_%": 93.7} |
 | 2 Stitching (synthetic) | Synthetic room: stitch + criterion < 10 % | **PASS** | {"infinity_no_corrections": 1.92, "full_pipeline": 0.2} |
@@ -20,4 +20,4 @@
 | 5 Unreal Engine 5.8 | Unreal capture 8 cameras -> stitch | **PASS** | {"frame": "D:\\Games\\Smart Helmet\\MyProject\\Saved\\SmartHelmet\\20261101_190702_Editor\\frames\\000003", "images": ["cam0.png", "cam1.png", "cam2.png", "cam3.png", "cam4.png", "cam5.png", "cam6.png", "top7.png"], "seam_artifacts_%": 0.33} |
 | 5 Unreal Engine 5.8 | C++ build artefacts present | **PASS** | {"dlls": {"UnrealEditor-MyProject.dll": "2026-11-01 19:06", "UnrealEditor-MyProjectEditor.dll": "2026-11-01 19:06"}, "binaries_newer_than_sources": true} |
 
-Итого: {'PASS': 14, 'FAIL': 1, 'SKIP': 0}
+Total: {'PASS': 14, 'FAIL': 1, 'SKIP': 0}

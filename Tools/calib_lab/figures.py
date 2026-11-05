@@ -83,7 +83,7 @@ def overlap_maps(w=720):
         img = colors[cnt]
         res = json.loads((OUT / f"{key}_s1" / "results.json").read_text(encoding="utf-8"))["overlap"] \
             if (OUT / f"{key}_s1" / "results.json").exists() else None
-        t = f"{spec.title.replace('×', 'x').replace(' (схема)', ' (scheme)').replace('камер', 'cams')}"
+        t = spec.title.replace('×', 'x')
         if res:
             t += f": horizon overlap {res['horizon_overlap_deg']} deg, {res['px_per_deg']} px/deg"
         img = label(img, t, 0.6, 24)
